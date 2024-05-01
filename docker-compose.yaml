@@ -1,0 +1,92 @@
+services:
+  etcd-int:
+    image: bitnami/etcd:latest
+    container_name: etcd-int
+#    ports:
+#      - "2379:2379"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+  server_1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - register
+      - --endpoints=etcd-int:2379
+      - --start-delay=2s
+      - --max-lifetime=15s
+      - -d
+    environment:
+      - SERVICE_NAME=test
+      - SERVICE_PORT=8080
+    depends_on:
+      - etcd-int
+    restart: always
+  server_2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - register
+      - --endpoints=etcd-int:2379
+      - --start-delay=4s
+      - --max-lifetime=30s
+      - -d
+    environment:
+      - SERVICE_NAME=test
+      - SERVICE_PORT=8080
+    depends_on:
+      - etcd-int
+    restart: always
+  server_3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - register
+      - --endpoints=etcd-int:2379
+      - --start-delay=6s
+      - --max-lifetime=5s
+      - -d
+    environment:
+      - SERVICE_NAME=test
+      - SERVICE_PORT=8080
+    depends_on:
+      - etcd-int
+    restart: always
+  client_1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - discovery
+      - --endpoints=etcd-int:2379
+      - -d
+    environment:
+      - SERVICE_NAME=test
+    depends_on:
+      - etcd-int
+  client_2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      - discovery
+      - --endpoints=etcd-int:2379
+      - -d
+    environment:
+      - SERVICE_NAME=test
+    depends_on:
+      - etcd-int
+  status:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    entrypoint:
+        - /bin/sh
+        - -c
+    command:
+      - watch -n 1 "/usr/local/bin/esd status --endpoints=etcd-int:2379"
+    stop_grace_period: 0s
+    depends_on:
+      - etcd-int
